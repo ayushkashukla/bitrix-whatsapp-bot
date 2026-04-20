@@ -28,12 +28,10 @@ app.post('/webhook', async (req, res) => {
 
     console.log("Deal ID:", dealId);
 
-    // Fetch deal
     const dealResponse = await axios.get(
       `${process.env.BITRIX_WEBHOOK}/crm.deal.get?id=${dealId}`
     );
     const deal = dealResponse.data.result;
-    console.log("Deal data:", deal);
 
     const stageId = deal.STAGE_ID;
     console.log("Stage ID:", stageId);
@@ -49,7 +47,6 @@ app.post('/webhook', async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // Fetch contact
     const contactResponse = await axios.get(
       `${process.env.BITRIX_WEBHOOK}/crm.contact.get?id=${contactId}`
     );
@@ -62,13 +59,11 @@ app.post('/webhook', async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // Normalise to E.164 whatsapp format
     const cleaned = phone.replace(/[\s\-().]/g, '');
     const toNumber = cleaned.startsWith('+')
       ? `whatsapp:${cleaned}`
       : `whatsapp:+${cleaned}`;
 
-    // Send WhatsApp template via Twilio
     const message = await client.messages.create({
       from:       process.env.TWILIO_WHATSAPP_FROM,
       to:         toNumber,
