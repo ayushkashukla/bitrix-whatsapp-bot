@@ -1,86 +1,51 @@
-require("dotenv").config();
-const express = require("express");
-const axios = require("axios");
-
-const app = express();
-app.use(express.json());
-
-const BITRIX_WEBHOOK = process.env.BITRIX_WEBHOOK;
-
-// Test route
-app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
-});
-
-// Webhook endpoint
-app.post("/webhook", async (req, res) => {
+app.post('/webhook', async (req, res) => {
   try {
-    console.log("Webhook received:", JSON.stringify(req.body));
+    console.log("Webhook received:", req.body);
 
-    const dealId = req.body.data.FIELDS.ID;
-    const stageId = req.body.data.FIELDS.STAGE_ID;
+    const dealId = req.body.data?.FIELDS?.ID || req.body.data?.ID;
 
-    console.log("Deal ID:", dealId);
-    console.log("Stage:", stageId);
-
-    // ⚠️ Temporary (we will fix this later)
-    if (!stageId) {
-      return res.send("No stage");
+    if (!dealId) {
+      console.log("No Deal ID found");
+      return res.sendStatus(200);
     }
 
-    // Get deal details
-    const dealRes = await axios.get(
-      `${BITRIX_WEBHOOK}crm.deal.get?id=${dealId}`
+    // Fetch deal details from Bitrix
+    const dealResponse = await axios.get(
+      `${process.env.BITRIX_WEBHOOK}/crm.deal.get?id=${dealId}`
     );
 
-    const deal = dealRes.data.result;
+    const deal = dealResponse.data.result;
+
+    console.log("Deal data:", deal);
+
+    const stageId = deal.STAGE_ID;
+
+    console.log("Stage ID:", stageId);
+
+    // 👉 Only trigger for Send WhatsApp stage (we'll update later)
+    if (stageId !== "PUT_YOUR_STAGE_ID_HERE") {
+      return res.sendStatus(200);
+    }
+
+    // Get contact ID
     const contactId = deal.CONTACT_ID;
 
-    if (!contactId) {
-      return res.send("No contact linked");
-    }
-
-    // Get contact
-    const contactRes = await axios.get(
-      `${BITRIX_WEBHOOK}crm.contact.get?id=${contactId}`
+    const contactResponse = await axios.get(
+      `${process.env.BITRIX_WEBHOOK}/crm.contact.get?id=${contactId}`
     );
 
-    const contact = contactRes.data.result;
+    const contact = contactResponse.data.result;
 
-    if (!contact.PHONE || contact.PHONE.length === 0) {
-      return res.send("No phone found");
-    }
-
-    const phone = contact.PHONE[0].VALUE;
+    const phone = contact.PHONE?.[0]?.VALUE;
 
     console.log("Phone:", phone);
 
-    // Send WhatsApp via Twilio
-    const response = await axios.post(
-      `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`,
-      new URLSearchParams({
-        From: process.env.TWILIO_WHATSAPP_FROM,
-        To: `whatsapp:${phone}`,
-        Body: "Hello from Bitrix24 🚀",
-      }),
-      {
-        auth: {
-          username: process.env.TWILIO_ACCOUNT_SID,
-          password: process.env.TWILIO_AUTH_TOKEN,
-        },
-      }
-    );
+    // 👉 Twilio send (we’ll finalize after stage ID)
+    
+    res.sendStatus(200);
 
-    console.log("Message sent:", response.data.sid);
-
-    res.send("Message sent");
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).send("Error");
+    console.error("Error:", error.message);
+    res.sendStatus(500);
   }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
 });
