@@ -67,7 +67,7 @@ app.post('/webhook', async (req, res) => {
     const message = await client.messages.create({
       from:       process.env.TWILIO_WHATSAPP_FROM,
       to:         toNumber,
-      contentSid: 'HXfc1f4e38bd9cba8282ed689ff9f13c93',
+      contentSid: 'HX3716e4a21d37e1a969ece86615cbe79d',
     });
 
     console.log("WhatsApp sent, SID:", message.sid);
