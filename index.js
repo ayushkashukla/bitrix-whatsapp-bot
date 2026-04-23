@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: true }));
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 app.get('/', (req, res) => {
-  res.send('Server is running 🚀');
+  res.send('Server is running ');
 });
 
 app.post('/webhook', async (req, res) => {
